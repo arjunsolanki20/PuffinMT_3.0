@@ -5,4 +5,5 @@ cypress/videos/
 allure-results/
 allure-report/
 cypress.env.json
+cypress.env.local
 .DS_Store

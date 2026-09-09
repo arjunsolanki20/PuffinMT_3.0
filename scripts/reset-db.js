@@ -6,17 +6,24 @@
  */
 
 const sql = require('mssql');
+const { loadEnvironmentConfig } = require('./load-env-config');
 
-const requiredEnvironmentVariables = [
-  'DB_SERVER',
-  'DB_NAME',
-  'DB_USER',
-  'DB_PASSWORD',
-  'TEST_USERNAME'
-];
-const missingEnvironmentVariables = requiredEnvironmentVariables.filter(
-  (name) => !process.env[name]
-);
+const environmentConfig = loadEnvironmentConfig();
+const dbServer = process.env.DB_SERVER || environmentConfig.DB_SERVER;
+const dbName = process.env.DB_NAME || environmentConfig.DB_NAME;
+const dbUser = process.env.DB_USER || environmentConfig.DB_USER;
+const dbPassword = process.env.DB_PASSWORD || environmentConfig.DB_PASSWORD;
+const testUsername = process.env.TEST_USERNAME || environmentConfig.USERNAME;
+const requiredConfiguration = {
+  DB_SERVER: dbServer,
+  DB_NAME: dbName,
+  DB_USER: dbUser,
+  DB_PASSWORD: dbPassword,
+  TEST_USERNAME: testUsername,
+};
+const missingEnvironmentVariables = Object.entries(requiredConfiguration)
+  .filter(([, value]) => !value)
+  .map(([name]) => name);
 
 if (missingEnvironmentVariables.length > 0) {
   throw new Error(
@@ -25,13 +32,13 @@ if (missingEnvironmentVariables.length > 0) {
 }
 
 const config = {
-  server: process.env.DB_SERVER,
-  database: process.env.DB_NAME,
+  server: dbServer,
+  database: dbName,
   authentication: {
     type: 'default',
     options: {
-      userName: process.env.DB_USER,
-      password: process.env.DB_PASSWORD
+      userName: dbUser,
+      password: dbPassword
     }
   },
   options: {
@@ -48,10 +55,10 @@ async function resetDatabase() {
     await pool.connect();
     console.log('✓ Connected to database');
 
-    console.log(`Clearing login session for ${process.env.TEST_USERNAME}...`);
+    console.log(`Clearing login session for ${testUsername}...`);
     const result = await pool
       .request()
-      .input('username', sql.NVarChar, process.env.TEST_USERNAME)
+      .input('username', sql.NVarChar, testUsername)
       .query('UPDATE loginusermaster SET isloggedin=0 WHERE UserName=@username');
     console.log(`✓ Database cleared: ${result.rowsAffected[0]} row(s) updated`);
 

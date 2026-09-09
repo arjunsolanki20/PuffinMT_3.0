@@ -27,7 +27,7 @@ survey-automation/
 ├── allure-report/                  # Generated Allure HTML report
 ├── cypress.config.js
 ├── cypress.env.example.json        # Safe configuration template
-├── cypress.env.json                # Local secrets (ignored by Git)
+├── cypress.env.local               # Local secrets (ignored by Git)
 ├── cucumber.json
 ├── package.json
 └── .gitignore
@@ -44,7 +44,7 @@ survey-automation/
 npm install
 
 # 2. Configure credentials
-# Copy cypress.env.example.json to cypress.env.json, then set real values.
+# Copy cypress.env.example.json to cypress.env.local, then set real values.
 # Do NOT commit real secrets - use CI env vars in shared pipelines instead.
 ```
 

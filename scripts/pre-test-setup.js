@@ -11,21 +11,10 @@
 
 const sql = require('mssql');
 const fs = require('fs');
-const path = require('path');
 const { execSync } = require('child_process');
+const { loadEnvironmentConfig } = require('./load-env-config');
 
-// Load environment variables from cypress.env.json
-let envConfig = {};
-try {
-  const envPath = path.join(__dirname, '..', 'cypress.env.json');
-  if (fs.existsSync(envPath)) {
-    const envContent = fs.readFileSync(envPath, 'utf-8');
-    envConfig = JSON.parse(envContent);
-    console.log('📋 [CONFIG] Loaded credentials from cypress.env.json\n');
-  }
-} catch (err) {
-  console.warn('⚠️  [CONFIG] Could not read cypress.env.json:', err.message);
-}
+const envConfig = loadEnvironmentConfig();
 
 // Database configuration
 const dbServer = process.env.DB_SERVER || envConfig.DB_SERVER;

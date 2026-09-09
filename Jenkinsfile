@@ -32,23 +32,9 @@ pipeline {
         stage('Unlock Test User') {
             steps {
                 withCredentials([
-                    usernamePassword(
-                        credentialsId: 'puffin-ui-login',
-                        usernameVariable: 'TEST_USERNAME',
-                        passwordVariable: 'PUFFIN_UI_PASSWORD'
-                    ),
-                    usernamePassword(
-                        credentialsId: 'puffin-db-login',
-                        usernameVariable: 'DB_USER',
-                        passwordVariable: 'DB_PASSWORD'
-                    ),
-                    string(
-                        credentialsId: 'puffin-db-server',
-                        variable: 'DB_SERVER'
-                    ),
-                    string(
-                        credentialsId: 'puffin-db-name',
-                        variable: 'DB_NAME'
+                    file(
+                        credentialsId: 'puffin-cypress-env',
+                        variable: 'CYPRESS_ENV_FILE'
                     )
                 ]) {
                     sh 'node scripts/reset-db.js'
@@ -59,10 +45,9 @@ pipeline {
         stage('Run Tests') {
             steps {
                 withCredentials([
-                    usernamePassword(
-                        credentialsId: 'puffin-ui-login',
-                        usernameVariable: 'CYPRESS_USERNAME',
-                        passwordVariable: 'CYPRESS_PASSWORD'
+                    file(
+                        credentialsId: 'puffin-cypress-env',
+                        variable: 'CYPRESS_ENV_FILE'
                     )
                 ]) {
                     sh 'npm test'
