@@ -50,7 +50,7 @@ pipeline {
                         variable: 'CYPRESS_ENV_FILE'
                     )
                 ]) {
-                    sh 'npx cypress run --spec "cypress/e2e/features/login.feature"''
+                    sh 'npx cypress run --spec "cypress/e2e/features/login.feature"'
                 }
             }
         }
