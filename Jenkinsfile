@@ -29,6 +29,33 @@ pipeline {
             }
         }
 
+        stage('Unlock Test User') {
+            steps {
+                withCredentials([
+                    usernamePassword(
+                        credentialsId: 'puffin-ui-login',
+                        usernameVariable: 'TEST_USERNAME',
+                        passwordVariable: 'PUFFIN_UI_PASSWORD'
+                    ),
+                    usernamePassword(
+                        credentialsId: 'puffin-db-login',
+                        usernameVariable: 'DB_USER',
+                        passwordVariable: 'DB_PASSWORD'
+                    ),
+                    string(
+                        credentialsId: 'puffin-db-server',
+                        variable: 'DB_SERVER'
+                    ),
+                    string(
+                        credentialsId: 'puffin-db-name',
+                        variable: 'DB_NAME'
+                    )
+                ]) {
+                    sh 'node scripts/reset-db.js'
+                }
+            }
+        }
+
         stage('Run Tests') {
             steps {
                 withCredentials([
