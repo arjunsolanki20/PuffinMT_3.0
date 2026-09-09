@@ -50,13 +50,21 @@ class LoginPage {
 
   clickSsoButton() {
     this.getSsoButton().should('be.visible').click();
+    this.waitForSsoLoginForm();
+  }
 
+  waitForSsoLoginForm() {
     // Wait for redirect to Aurora login page — assert on URL change
     // rather than the load event (more reliable for auth redirects)
     cy.url({ timeout: 30000 }).should('include', 'TestAuroraServer/Account/Login');
 
     // Wait for the form to be in the DOM before proceeding
     this.getUsernameInput().should('exist');
+  }
+
+  openKfhSsoLogin() {
+    cy.visit('/AuroraAuth/api/auth/login');
+    this.waitForSsoLoginForm();
   }
 
   verifyUsernamePasswordFormVisible() {
@@ -264,6 +272,15 @@ class LoginPage {
 
       if (hasSsoButton) {
         this.clickSsoButton();
+        this.verifyUsernamePasswordFormVisible();
+        this.typeUsername(username);
+        this.typePassword(password);
+        this.clickSignIn();
+        return;
+      }
+
+      if (tenantName.toUpperCase() === 'KFH') {
+        this.openKfhSsoLogin();
         this.verifyUsernamePasswordFormVisible();
         this.typeUsername(username);
         this.typePassword(password);
