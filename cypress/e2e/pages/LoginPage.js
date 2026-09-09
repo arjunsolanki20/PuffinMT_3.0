@@ -1,18 +1,25 @@
+const USERNAME_SELECTOR =
+  '#username, input[name="username"], input[placeholder*="Username"], input[placeholder*="username"], input[type="email"], input[type="text"], input:not([type])';
+
 class LoginPage {
   // ---------- Elements ----------
   getSsoButton() {
     return cy.contains('button', 'Sign in with SSO');
   }
   getUsernameInput() {
-    // Aurora login page uses lowercase: id="username" name="username"
-    return cy.get('#username');
+    return cy
+      .get(USERNAME_SELECTOR)
+      .filter(':visible')
+      .first();
   }
   getPasswordInput() {
-    // Aurora login page uses lowercase: id="password" name="password"
-    return cy.get('#password');
+    return cy
+      .get('#password, input[name="password"], input[type="password"]')
+      .filter(':visible')
+      .first();
   }
   getSignInButton() {
-    return cy.contains('button', 'Sign In');
+    return cy.contains('button', /^(Sign In|Login)$/i);
   }
   getTenantDropdown() {
     return cy.get('select, [role="combobox"]').first();
@@ -24,6 +31,21 @@ class LoginPage {
   // ---------- Actions ----------
   visitLoginPage() {
     cy.visit('/PuffinUI/login/');
+  }
+
+  waitForLoginLayout() {
+    cy.get('body', { timeout: 60000 }).should(($body) => {
+      const hasSsoButton = $body
+        .find('button')
+        .toArray()
+        .some((button) => button.textContent.trim() === 'Sign in with SSO');
+      const hasUsernameInput = $body.find(USERNAME_SELECTOR).filter(':visible').length > 0;
+
+      expect(
+        hasSsoButton || hasUsernameInput,
+        'SSO button or direct-login username input'
+      ).to.equal(true);
+    });
   }
 
   clickSsoButton() {
@@ -38,6 +60,27 @@ class LoginPage {
   }
 
   verifyUsernamePasswordFormVisible() {
+    cy.url().then((url) => {
+      cy.get('body').then(($body) => {
+        const inputCount = $body.find('input').length;
+        const iframeCount = $body.find('iframe').length;
+        const buttonLabels = $body
+          .find('button')
+          .toArray()
+          .map((button) => button.textContent.trim())
+          .filter(Boolean)
+          .join(', ');
+
+        if (inputCount === 0) {
+          throw new Error(
+            `Login form inputs were not found at ${url}. ` +
+            `iframes=${iframeCount}; buttons=${buttonLabels || 'none'}; ` +
+            `page=${$body.text().replace(/\s+/g, ' ').trim().slice(0, 300)}`
+          );
+        }
+      });
+    });
+
     this.getUsernameInput().should('be.visible');
     this.getPasswordInput().should('be.visible');
   }
@@ -70,33 +113,43 @@ class LoginPage {
     cy.url({ timeout: 30000 }).should('not.include', 'TestAuroraServer/Account/Login');
   }
 
+  clickDirectLogin() {
+    this.getSignInButton().should('be.visible').click();
+    cy.url({ timeout: 60000 }).should('not.include', '/PuffinUI/login');
+  }
+
   selectTenant(tenantName) {
-    cy.url({ timeout: 30000 }).should('include', '/PuffinUI/select-tenant');
-
-    // Some environments pre-populate tenant in the URL and do not render a picker.
-    cy.location('search').then((search) => {
-      const params = new URLSearchParams(search);
-      const selectedTenant = params.get('tenant_name');
-
-      if (selectedTenant && selectedTenant.toLowerCase() === tenantName.toLowerCase()) {
+    cy.url({ timeout: 30000 }).then((currentUrl) => {
+      if (!currentUrl.includes('/PuffinUI/select-tenant')) {
         return;
       }
 
-      cy.get('body').then(($body) => {
-        const pickerSelector = 'select, [role="combobox"], [data-testid*="tenant" i]';
+      // Some environments pre-populate tenant in the URL and do not render a picker.
+      cy.location('search').then((search) => {
+        const params = new URLSearchParams(search);
+        const selectedTenant = params.get('tenant_name');
 
-        if ($body.find(pickerSelector).length > 0) {
-          cy.get(pickerSelector).first().should('be.visible').click();
-          cy.contains('li, option, [role="option"]', tenantName).click();
+        if (selectedTenant && selectedTenant.toLowerCase() === tenantName.toLowerCase()) {
           return;
         }
 
-        if ($body.text().includes(tenantName)) {
-          cy.contains('button, a, li, div, span', tenantName).first().click({ force: true });
-          return;
-        }
+        cy.get('body').then(($body) => {
+          const pickerSelector =
+            'select, [role="combobox"], [data-testid*="tenant"], [data-testid*="Tenant"]';
 
-        throw new Error(`Tenant selector was not found and tenant "${tenantName}" is not preselected in URL.`);
+          if ($body.find(pickerSelector).length > 0) {
+            cy.get(pickerSelector).first().should('be.visible').click();
+            cy.contains('li, option, [role="option"]', tenantName).click();
+            return;
+          }
+
+          if ($body.text().includes(tenantName)) {
+            cy.contains('button, a, li, div, span', tenantName).first().click({ force: true });
+            return;
+          }
+
+          throw new Error(`Tenant selector was not found and tenant "${tenantName}" is not preselected in URL.`);
+        });
       });
     });
   }
@@ -184,11 +237,29 @@ class LoginPage {
 
     // Now proceed with login
     this.visitLoginPage();
-    this.clickSsoButton();
-    this.verifyUsernamePasswordFormVisible();
-    this.typeUsername(username);
-    this.typePassword(password);
-    this.clickSignIn();
+    this.waitForLoginLayout();
+
+    cy.get('body').then(($body) => {
+      const hasSsoButton = $body
+        .find('button')
+        .toArray()
+        .some((button) => button.textContent.trim() === 'Sign in with SSO');
+
+      if (hasSsoButton) {
+        this.clickSsoButton();
+        this.verifyUsernamePasswordFormVisible();
+        this.typeUsername(username);
+        this.typePassword(password);
+        this.clickSignIn();
+        return;
+      }
+
+      this.verifyUsernamePasswordFormVisible();
+      this.typeUsername(username);
+      this.typePassword(password);
+      this.clickDirectLogin();
+    });
+
     this.selectTenant(tenantName);
     this.clickContinue();
     this.verifyLoginSuccess();

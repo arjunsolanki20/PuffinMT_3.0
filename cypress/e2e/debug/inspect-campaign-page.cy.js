@@ -16,7 +16,9 @@ describe('Campaign Page Structure Debug', () => {
 
     cy.url({ timeout: 30000 }).should('not.include', 'TestAuroraServer/Account/Login');
     cy.url({ timeout: 30000 }).should('include', '/PuffinUI/select-tenant');
-    cy.get('select, [role="combobox"], [data-testid*="tenant" i]').first().click();
+    cy.get(
+      'select, [role="combobox"], [data-testid*="tenant"], [data-testid*="Tenant"]'
+    ).first().click();
     cy.contains('li, option, [role="option"]', Cypress.env('TENANT')).click();
     cy.contains('button', 'Continue').click();
 

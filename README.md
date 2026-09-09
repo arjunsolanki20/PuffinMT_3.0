@@ -110,7 +110,7 @@ Outputs:
 
 Matches the manual flow:
 1. Visit `/PuffinUI/login`
-2. Click **Sign in with SSO**
+2. Use the available login form (direct login or **Sign in with SSO**)
 3. Username/Password form appears (TestAuroraServer Account/Login)
 4. Enter credentials and click **Sign In**
 5. **Select Tenant** page appears -> choose tenant (e.g. `KFH`)

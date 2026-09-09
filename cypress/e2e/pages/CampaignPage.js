@@ -403,18 +403,32 @@ class CampaignPage {
   }
 
   clickAddBroadcastButton() {
-    cy.log('[clickAddBroadcastButton] Finding Add Broadcast button...');
-    this.addBroadcastButton.then(($btn) => {
-      cy.log(`[clickAddBroadcastButton] Found button with text: "${$btn.text().substring(0, 50)}", clicking...`);
-      cy.wrap($btn).should('be.visible').click({ force: true });
-    });
+    const openModalSelector = '[role="dialog"].open, [role="alertdialog"].open';
+    const clickUntilModalOpens = (attempt) => {
+      cy.log(`[clickAddBroadcastButton] Click attempt ${attempt}...`);
+      this.addBroadcastButton
+        .scrollIntoView()
+        .should('be.visible')
+        .and('not.be.disabled')
+        .click();
 
-    cy.log('[clickAddBroadcastButton] Waiting for modal to appear...');
-    // The dialog node always exists in the DOM, so we must wait for the "open" class
-    // (the real signal it has actually opened) rather than mere existence.
-    cy.get('[role="dialog"].open, [role="alertdialog"].open', { timeout: 30000 }).should('exist');
+      cy.wait(1000);
+      cy.get('body').then(($body) => {
+        if ($body.find(openModalSelector).length > 0) {
+          return;
+        }
 
-    // Additional wait for API calls to complete loading dropdown data
+        if (attempt >= 3) {
+          throw new Error('Add Broadcast modal did not open after 3 click attempts.');
+        }
+
+        cy.log('[clickAddBroadcastButton] Modal did not open; retrying after hydration...');
+        clickUntilModalOpens(attempt + 1);
+      });
+    };
+
+    clickUntilModalOpens(1);
+    cy.get(openModalSelector, { timeout: 30000 }).should('exist');
     cy.wait(1500);
 
     cy.log('[clickAddBroadcastButton] ✓ Modal appeared successfully');
@@ -770,7 +784,13 @@ class CampaignPage {
         cy.log('[assertBroadcastScheduledSuccessfully] Modal still open, attempting to close by clicking close button...');
 
         // Try to find and click close button
-        cy.get('[role="dialog"] button[aria-label*="close" i], [role="dialog"] button[aria-label*="dismiss" i]', { timeout: 5000 }).then(($closeBtn) => {
+        cy.get(
+          '[role="dialog"] button[aria-label*="close"], ' +
+          '[role="dialog"] button[aria-label*="Close"], ' +
+          '[role="dialog"] button[aria-label*="dismiss"], ' +
+          '[role="dialog"] button[aria-label*="Dismiss"]',
+          { timeout: 5000 }
+        ).then(($closeBtn) => {
           if ($closeBtn.length > 0) {
             cy.wrap($closeBtn).first().click({ force: true });
             cy.wait(500);
