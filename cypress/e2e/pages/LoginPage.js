@@ -114,7 +114,24 @@ class LoginPage {
   }
 
   clickDirectLogin() {
+    cy.intercept('POST', '**/api/User/v1/login').as('directLogin');
     this.getSignInButton().should('be.visible').click();
+
+    cy.wait('@directLogin', { timeout: 60000 }).then(({ response }) => {
+      const statusCode = response?.statusCode;
+      const responseBody = response?.body;
+      const isSuccessful = responseBody?.isSuccess ?? responseBody?.success;
+
+      if (!response || statusCode >= 400 || isSuccessful === false) {
+        const message =
+          responseBody?.responseMessage ||
+          responseBody?.message ||
+          'The login API rejected the request.';
+
+        throw new Error(`Direct login failed (${statusCode || 'no status'}): ${message}`);
+      }
+    });
+
     cy.url({ timeout: 60000 }).should('not.include', '/PuffinUI/login');
   }
 
