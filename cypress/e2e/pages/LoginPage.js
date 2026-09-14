@@ -29,8 +29,24 @@ class LoginPage {
   }
 
   // ---------- Actions ----------
+  getLoginPageUrl() {
+    const configuredUrl = Cypress.env('LOGIN_URL');
+
+    if (typeof configuredUrl !== 'string' || !configuredUrl.trim()) {
+      throw new Error('LOGIN_URL is missing or empty. Configure it in the Cypress environment file.');
+    }
+
+    const loginUrl = configuredUrl.trim();
+
+    if (loginUrl.toLowerCase().includes('/api/')) {
+      throw new Error('LOGIN_URL must point to the frontend login page, not an /api/ route.');
+    }
+
+    return loginUrl;
+  }
+
   visitLoginPage() {
-    cy.visit('/PuffinUI/login/');
+    cy.visit(this.getLoginPageUrl());
   }
 
   waitForLoginLayout() {
@@ -60,11 +76,6 @@ class LoginPage {
 
     // Wait for the form to be in the DOM before proceeding
     this.getUsernameInput().should('exist');
-  }
-
-  openKfhSsoLogin() {
-    cy.visit('/AuroraAuth/api/auth/login');
-    this.waitForSsoLoginForm();
   }
 
   verifyUsernamePasswordFormVisible() {
@@ -280,12 +291,9 @@ class LoginPage {
       }
 
       if (tenantName.toUpperCase() === 'KFH') {
-        this.openKfhSsoLogin();
-        this.verifyUsernamePasswordFormVisible();
-        this.typeUsername(username);
-        this.typePassword(password);
-        this.clickSignIn();
-        return;
+        throw new Error(
+          `KFH requires the SSO login option, but it was not shown at ${this.getLoginPageUrl()}.`
+        );
       }
 
       this.verifyUsernamePasswordFormVisible();

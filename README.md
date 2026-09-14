@@ -51,6 +51,7 @@ npm install
 `cypress.env.example.json`:
 ```json
 {
+  "LOGIN_URL": "https://twowayserver.future-club.com/PuffinUI/login/",
   "USERNAME": "REPLACE_WITH_TEST_USERNAME",
   "PASSWORD": "REPLACE_WITH_TEST_PASSWORD",
   "TENANT": "REPLACE_WITH_TENANT",
@@ -61,6 +62,8 @@ npm install
   "DB_PASSWORD": "REPLACE_WITH_DB_PASSWORD"
 }
 ```
+
+`LOGIN_URL` must reference the browser-facing PuffinUI login page. Do not use an `/api/` endpoint.
 
 ## 4. Running Tests
 

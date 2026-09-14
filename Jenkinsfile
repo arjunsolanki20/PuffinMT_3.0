@@ -71,6 +71,7 @@ console.log('USERNAME:', env.USERNAME);
 console.log('TENANT:', env.TENANT);
 console.log('DB_SERVER:', env.DB_SERVER);
 console.log('DB_NAME:', env.DB_NAME);
+console.log('LOGIN_URL:', env.LOGIN_URL);
 
 if (!env.USERNAME) {
     throw new Error('USERNAME is missing');
@@ -86,6 +87,29 @@ if (!env.DB_SERVER) {
 
 if (!env.DB_NAME) {
     throw new Error('DB_NAME is missing');
+}
+
+if (typeof env.LOGIN_URL !== 'string' || !env.LOGIN_URL.trim()) {
+    throw new Error('LOGIN_URL is missing or empty');
+}
+
+const loginUrl = env.LOGIN_URL.trim();
+
+if (loginUrl.toLowerCase().includes('/api/')) {
+    throw new Error(
+        'LOGIN_URL must point to the frontend login page and must not contain "/api/"'
+    );
+}
+
+let parsedLoginUrl;
+try {
+    parsedLoginUrl = new URL(loginUrl);
+} catch {
+    throw new Error('LOGIN_URL must be a valid browser-navigable URL');
+}
+
+if (!['http:', 'https:'].includes(parsedLoginUrl.protocol)) {
+    throw new Error('LOGIN_URL must use http:// or https://');
 }
 
 console.log('Environment validation passed');
